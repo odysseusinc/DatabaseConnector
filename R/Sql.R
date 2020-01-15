@@ -329,6 +329,8 @@ executeSql <- function(connection,
                        reportOverallTime = TRUE, 
                        errorReportFile = file.path(getwd(), "errorReport.txt"),
                        runAsBatch = FALSE) {
+  warning("executing sql:")
+  warning(sql)
   if (inherits(connection, "DatabaseConnectorJdbcConnection") && rJava::is.jnull(connection@jConnection))
     stop("Connection is closed")
   batched <- runAsBatch && supportsBatchUpdates(connection)
@@ -336,12 +338,15 @@ executeSql <- function(connection,
     progressBar <- FALSE
   }
   sqlStatements <- SqlRender::splitSql(sql)
+  warning("sql statements are")
+  warning(sqlStatements)
   if (progressBar) {
     pb <- txtProgressBar(style = 3)
   }
   start <- Sys.time()
   if (batched) {
     statement <- rJava::.jcall(connection@jConnection, "Ljava/sql/Statement;", "createStatement")
+    warning("statement is created")
     on.exit(rJava::.jcall(statement, "V", "close"))
   }
   if (inherits(connection, "DatabaseConnectorJdbcConnection") && 
@@ -354,6 +359,8 @@ executeSql <- function(connection,
   }
   for (i in 1:length(sqlStatements)) {
     sqlStatement <- sqlStatements[i]
+    warning("single sql statement is")
+    warning(sqlStatement)
     if (profile) {
       fileConn <- file(paste("statement_", i, ".sql", sep = ""))
       writeChar(sqlStatement, fileConn, eos = NULL)
@@ -370,6 +377,7 @@ executeSql <- function(connection,
           writeLines(paste("Statement ", i, "took", delta, attr(delta, "units")))
         }
       }, error = function(err) {
+        warning(paste("error happened"))
         .createErrorReport(connection@dbms, err$message, sqlStatement, errorReportFile)
       })
     }
