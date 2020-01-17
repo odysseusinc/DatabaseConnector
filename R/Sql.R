@@ -270,14 +270,11 @@ supportsBatchUpdates <- function(connection) {
     dbmsMeta <- rJava::.jcall(connection@jConnection, "Ljava/sql/DatabaseMetaData;", "getMetaData", check = FALSE)
     if (!is.jnull(dbmsMeta)) {
       if (rJava::.jcall(dbmsMeta, "Z", "supportsBatchUpdates")) {
-        writeLines("JDBC driver supports batch updates")
         return(TRUE);
       } else {
-        writeLines("JDBC driver does not support batch updates")
       }
     }
   }, error = function(err) {
-    writeLines(paste("JDBC driver 'supportsBatchUpdates' threw exception", err$message))
   })
   return(FALSE);
 }
@@ -329,8 +326,6 @@ executeSql <- function(connection,
                        reportOverallTime = TRUE, 
                        errorReportFile = file.path(getwd(), "errorReport.txt"),
                        runAsBatch = FALSE) {
-  warning("executing sql:")
-  warning(sql)
   if (inherits(connection, "DatabaseConnectorJdbcConnection") && rJava::is.jnull(connection@jConnection))
     stop("Connection is closed")
   batched <- runAsBatch && supportsBatchUpdates(connection)
@@ -338,15 +333,12 @@ executeSql <- function(connection,
     progressBar <- FALSE
   }
   sqlStatements <- SqlRender::splitSql(sql)
-  warning("sql statements are")
-  warning(sqlStatements)
   if (progressBar) {
     pb <- txtProgressBar(style = 3)
   }
   start <- Sys.time()
   if (batched) {
     statement <- rJava::.jcall(connection@jConnection, "Ljava/sql/Statement;", "createStatement")
-    warning("statement is created")
     on.exit(rJava::.jcall(statement, "V", "close"))
   }
   if (inherits(connection, "DatabaseConnectorJdbcConnection") && 
@@ -359,8 +351,6 @@ executeSql <- function(connection,
   }
   for (i in 1:length(sqlStatements)) {
     sqlStatement <- sqlStatements[i]
-    warning("single sql statement is")
-    warning(sqlStatement)
     if (profile) {
       fileConn <- file(paste("statement_", i, ".sql", sep = ""))
       writeChar(sqlStatement, fileConn, eos = NULL)
@@ -371,6 +361,7 @@ executeSql <- function(connection,
     } else {
       tryCatch({
         startQuery <- Sys.time()
+        writeLines(paste("single sql statement is ", sqlStatement))
         lowLevelExecuteSql(connection, sqlStatement)
         if (profile) {
           delta <- Sys.time() - startQuery
