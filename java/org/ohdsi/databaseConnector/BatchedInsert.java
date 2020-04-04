@@ -48,29 +48,42 @@ public class BatchedInsert {
 		}
 		try {
 
-			if (BigQueryStreamLoader.isStreamLoadAvailable(connection)) {
-
-				BigQueryStreamLoader bigQueryStreamLoader = new BigQueryStreamLoader();
-				bigQueryStreamLoader.init(connection);
-				bigQueryStreamLoader.load(sql, getListOfRows());
-				return;
-			}
+//			if (BigQueryStreamLoader.isStreamLoadAvailable(connection)) {
+//
+//				BigQueryStreamLoader bigQueryStreamLoader = new BigQueryStreamLoader();
+//				bigQueryStreamLoader.init(connection);
+//				bigQueryStreamLoader.load(sql, getListOfRows());
+//				return;
+//			}
 
 			trySettingAutoCommit(connection, false);
 			PreparedStatement statement = connection.prepareStatement(sql);
 
 			List<List<Object>> raws = getListOfRows();
 
-			for (int i = 0; i < raws.size(); i++) {
-				List<Object> row = raws.get(i);
-				for (int j = 0; j < columnCount; j++) {
-					statement.setObject(j + 1, row.get(j));
+
+
+			if (BigQueryStreamLoader.isStreamLoadAvailable(connection)) {
+				for (int i = 0; i < raws.size(); i++) {
+					List<Object> row = raws.get(i);
+					for (int j = 0; j < columnCount; j++) {
+						statement.setObject(j + 1, row.get(j));
+					}
+								}
+				statement.executeUpdate();
+			} else {
+				for (int i = 0; i < raws.size(); i++) {
+					List<Object> row = raws.get(i);
+					for (int j = 0; j < columnCount; j++) {
+						statement.setObject(j + 1, row.get(j));
+					}
+					statement.addBatch();
 				}
-				statement.addBatch();
+
+				statement.executeBatch();
+				connection.commit();
 			}
 
-			statement.executeBatch();
-			connection.commit();
 			statement.close();
 			connection.clearWarnings();
 			trySettingAutoCommit(connection, true);
