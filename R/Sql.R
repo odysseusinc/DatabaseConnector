@@ -252,12 +252,13 @@ lowLevelExecuteSql.default <- function(connection, sql) {
   start <- Sys.time()
   hasResultSet <- rJava::.jcall(statement, "Z", "execute", as.character(sql), check = FALSE)
 
+  threshold = 2
   if (connection@dbms == "bigquery") {
     if (startsWith(sql, 'insert')) {
       delta = Sys.time() - start
-      if (delta < 1) {
+      if (delta < threshold) {
         print(paste("Statement ", sql, "took", delta, attr(delta, "units")))
-        Sys.sleep(1 - delta)
+        Sys.sleep(threshold - delta)
       }
     }
   }
