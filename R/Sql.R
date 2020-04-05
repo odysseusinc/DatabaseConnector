@@ -259,7 +259,6 @@ lowLevelExecuteSql.default <- function(connection, sql) {
     if (startsWith(value, 'INSERT')) {
       delta = Sys.time() - start
       if (delta < threshold) {
-        print(paste("Statement ", sql, "took", delta, attr(delta, "units")))
         Sys.sleep(threshold - delta)
       }
     }
