@@ -254,7 +254,9 @@ lowLevelExecuteSql.default <- function(connection, sql) {
 
   threshold = 2
   if (connection@dbms == "bigquery") {
-    if (startsWith(sql, 'insert')) {
+    value <- toupper(sql)
+    value <- sub("^\\s+", "", value)
+    if (startsWith(value, 'INSERT')) {
       delta = Sys.time() - start
       if (delta < threshold) {
         print(paste("Statement ", sql, "took", delta, attr(delta, "units")))
