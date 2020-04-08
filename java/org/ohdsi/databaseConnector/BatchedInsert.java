@@ -1,20 +1,15 @@
 package org.ohdsi.databaseConnector;
 
+import static org.ohdsi.databaseConnector.BatchColumnType.*;
+
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class BatchedInsert {
-	public static int	INTEGER		= 0;
-	public static int	NUMERIC		= 1;
-	public static int	STRING		= 2;
-	public static int	DATE		= 3;
-	public static int	DATETIME	= 4;
-	public static int	BIGINT		= 5;
 
 	private Object[]	columns;
 	private int[]		columnTypes;
@@ -30,7 +25,7 @@ public class BatchedInsert {
 		columns = new Object[columnCount];
 		columnTypes = new int[columnCount];
 	}
-	
+
 	public void executeBatch() {
 		for (int i = 0; i < columnCount; i++) {
 			if (columns[i] == null)
@@ -48,43 +43,11 @@ public class BatchedInsert {
 		}
 		try {
 
-//			if (BigQueryStreamLoader.isStreamLoadAvailable(connection)) {
-//
-//				BigQueryStreamLoader bigQueryStreamLoader = new BigQueryStreamLoader();
-//				bigQueryStreamLoader.init(connection);
-//				bigQueryStreamLoader.load(sql, getListOfRows());
-//				return;
-//			}
-
 			trySettingAutoCommit(connection, false);
-			PreparedStatement statement = connection.prepareStatement(sql);
 
-			List<List<Object>> raws = getListOfRows();
+			DataLoader dataLoader = new DataLoader(columnCount, rowCount, connection, columns, columnTypes);
+			dataLoader.load(sql);
 
-
-
-			if (BigQueryStreamLoader.isStreamLoadAvailable(connection)) {
-				for (int i = 0; i < raws.size(); i++) {
-					List<Object> row = raws.get(i);
-					for (int j = 0; j < columnCount; j++) {
-						statement.setObject(j + 1, row.get(j));
-					}
-								}
-				statement.executeUpdate();
-			} else {
-				for (int i = 0; i < raws.size(); i++) {
-					List<Object> row = raws.get(i);
-					for (int j = 0; j < columnCount; j++) {
-						statement.setObject(j + 1, row.get(j));
-					}
-					statement.addBatch();
-				}
-
-				statement.executeBatch();
-				connection.commit();
-			}
-
-			statement.close();
 			connection.clearWarnings();
 			trySettingAutoCommit(connection, true);
 		} catch (SQLException e) {
@@ -101,6 +64,8 @@ public class BatchedInsert {
 	}
 
 
+
+
 	private void trySettingAutoCommit(Connection connection, boolean value) throws SQLException {
 		try {
 			connection.setAutoCommit(value);
@@ -109,44 +74,6 @@ public class BatchedInsert {
 		}
 	}
 
-	private List<List<Object>> getListOfRows() {
-
-		List<List<Object>> data = new ArrayList<>();
-		for (int i = 0; i < rowCount; i++) {
-			List<Object> row = new ArrayList<>();
-			data.add(row);
-			for (int j = 0; j < columnCount; j++) {
-				row.add(getValue( i, j));
-			}
-		}
-		return data;
-	}
-
-	private Object getValue(int rowIndex, int columnIndex) {
-
-		if (columnTypes[columnIndex] == INTEGER) {
-			int value = ((int[]) columns[columnIndex])[rowIndex];
-			if (value == Integer.MIN_VALUE) return null;
-			return value;
-		} else if (columnTypes[columnIndex] == NUMERIC) {
-			double value = ((double[]) columns[columnIndex])[rowIndex];
-			if (Double.isNaN(value)) return null;
-			return value;
-		} else if (columnTypes[columnIndex] == DATE) {
-			String value = ((String[]) columns[columnIndex])[rowIndex];
-			return java.sql.Date.valueOf(value);
-		} else if (columnTypes[columnIndex] == DATETIME) {
-			String value = ((String[]) columns[columnIndex])[rowIndex];
-			return java.sql.Timestamp.valueOf(value);
-		} else if(columnTypes[columnIndex] == BIGINT) {
-			long value = ((long[]) columns[columnIndex])[rowIndex];
-			if (value == Long.MIN_VALUE) return null;
-			return value;
-		} else {
-			String value = ((String[]) columns[columnIndex])[rowIndex];
-			return value;
-		}
-	}
 
 	public void setInteger(int columnIndex, int[] column) {
 		columns[columnIndex - 1] = column;
