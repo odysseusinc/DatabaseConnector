@@ -2,7 +2,6 @@ package org.ohdsi.databaseConnector;
 
 import static org.ohdsi.databaseConnector.BatchColumnType.*;
 
-import com.google.api.client.repackaged.com.google.common.base.Strings;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -83,7 +82,8 @@ public class DataLoader {
 
         //create insert query by adding multiply values like insert values (?,?),(?,?),(?,?)
         String params = String.join(",", Collections.nCopies(columnCount, "?"));
-        String sqlWithValues = sql + Strings.repeat(String.format(", (%s)", params), batchData.getSize() - 1);
+        String sqlWithValues = Collections.nCopies(batchData.getSize() - 1, String.format(", (%s)", params)).stream().collect(Collectors.joining());
+
 
         PreparedStatement statement = connection.prepareStatement(sqlWithValues);
         for (int i = batchData.getFirstElementIndex(); i <= batchData.getLastElementIndex(); i++) {
