@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 public class DataLoader {
 
     private int ROW_LIMIT_PER_SAVE_FOR_BATCH = 1000;
-    private int ROW_LIMIT_PER_SAVE_FOR_INSERT = 6;
+    private int ROW_LIMIT_PER_SAVE_FOR_INSERT = 100;
 
     private static List<String> BIGQUARY_JDBC_DRIVER_CLASSES = Stream.of(
             "com.simba.googlebigquery.jdbc.jdbc42.S42ConnectionHandle",
