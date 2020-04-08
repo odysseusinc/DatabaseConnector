@@ -82,8 +82,7 @@ public class DataLoader {
 
         //create insert query by adding multiply values like insert values (?,?),(?,?),(?,?)
         String params = String.join(",", Collections.nCopies(columnCount, "?"));
-        String sqlWithValues = Collections.nCopies(batchData.getSize() - 1, String.format(", (%s)", params)).stream().collect(Collectors.joining());
-
+        String sqlWithValues = sql + Collections.nCopies(batchData.getSize() - 1, String.format(", (%s)", params)).stream().collect(Collectors.joining());
 
         PreparedStatement statement = connection.prepareStatement(sqlWithValues);
         for (int i = batchData.getFirstElementIndex(); i <= batchData.getLastElementIndex(); i++) {
