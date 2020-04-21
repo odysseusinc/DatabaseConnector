@@ -246,6 +246,8 @@ lowLevelExecuteSql <- function(connection, sql) {
 
 #' @export
 lowLevelExecuteSql.default <- function(connection, sql) {
+  print("")
+  print(paste("SQL_QUERY: ", sql))
   statement <- rJava::.jcall(connection@jConnection, "Ljava/sql/Statement;", "createStatement")
   on.exit(rJava::.jcall(statement, "V", "close"))
   hasResultSet <- rJava::.jcall(statement, "Z", "execute", as.character(sql), check = FALSE)
