@@ -37,7 +37,7 @@
   paste(quote, s, quote, sep = "")
 }
 
-mergeTempTables <- function(connection, tableName, varNames, sourceNames, distribution, oracleTempSchema) {
+mergeTempTables <- function(connection, tableName, varNames, sourceNames, distribution, oracleTempSchema, sessionId = NULL) {
   unionString <- paste("\nUNION ALL\nSELECT ", varNames, " FROM ", sep = "")
   valueString <- paste(sourceNames, collapse = unionString)
   sql <- paste(distribution,
@@ -50,13 +50,13 @@ mergeTempTables <- function(connection, tableName, varNames, sourceNames, distri
                valueString,
                ";",
                sep = "")
-  sql <- SqlRender::translate(sql, targetDialect = connection@dbms, oracleTempSchema = oracleTempSchema)
+  sql <- SqlRender::translate(sql, targetDialect = connection@dbms, oracleTempSchema = oracleTempSchema, sessionId = sessionId)
   executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
 
   # Drop source tables:
   for (sourceName in sourceNames) {
     sql <- paste("DROP TABLE", sourceName)
-    sql <- SqlRender::translate(sql, targetDialect = connection@dbms, oracleTempSchema = oracleTempSchema)
+    sql <- SqlRender::translate(sql, targetDialect = connection@dbms, oracleTempSchema = oracleTempSchema, sessionId = sessionId)
     executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
 }
@@ -98,7 +98,7 @@ formatRow <- function(data, aliases = c(), castValues, fts) {
   return(paste(data, aliases, collapse = ","))
 }
 
-ctasHack <- function(connection, qname, tempTable, varNames, fts, data, progressBar, oracleTempSchema) {
+ctasHack <- function(connection, qname, tempTable, varNames, fts, data, progressBar, oracleTempSchema, sessionId = NULL) {
   if (attr(connection, "dbms") == "hive") {
     batchSize <- 750
   } else {
@@ -157,14 +157,14 @@ ctasHack <- function(connection, qname, tempTable, varNames, fts, data, progress
                  tempName,
                  " FROM data;",
                  sep = "")
-    sql <- SqlRender::translate(sql, targetDialect = connection@dbms, oracleTempSchema = oracleTempSchema)
+    sql <- SqlRender::translate(sql, targetDialect = connection@dbms, oracleTempSchema = oracleTempSchema, sessionId = sessionId)
     executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
   if (progressBar) {
     setTxtProgressBar(pb, 1)
     close(pb)
   }
-  mergeTempTables(connection, qname, varNames, tempNames, distribution, oracleTempSchema)
+  mergeTempTables(connection, qname, varNames, tempNames, distribution, oracleTempSchema, sessionId)
 }
 
 is.bigint <- function(x) {
@@ -268,6 +268,7 @@ insertTable.default <- function(connection,
                                 createTable = TRUE,
                                 tempTable = FALSE,
                                 oracleTempSchema = NULL,
+                                sessionId = NULL,
                                 useMppBulkLoad = FALSE,
                                 progressBar = FALSE,
                                 camelCaseToSnakeCase = FALSE) {
@@ -341,7 +342,8 @@ insertTable.default <- function(connection,
     sql <- SqlRender::render(sql, tableName = tableName)
     sql <- SqlRender::translate(sql,
                                 targetDialect = attr(connection, "dbms"),
-                                oracleTempSchema = oracleTempSchema)
+                                oracleTempSchema = oracleTempSchema,
+                                sessionId = sessionId)
     executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
   
@@ -357,7 +359,7 @@ insertTable.default <- function(connection,
     
     if (dbms != "hive") {
       sql <- paste("CREATE TABLE ", qname, " (", fdef, ");", sep = "")
-      sql <- SqlRender::translate(sql, targetDialect = attr(connection, "dbms"))
+      sql <- SqlRender::translate(sql, targetDialect = attr(connection, "dbms"), sessionId = sessionId)
       executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
     }
     
@@ -374,13 +376,14 @@ insertTable.default <- function(connection,
     }
   } else {
     if (attr(connection, "dbms") %in% c("pdw", "redshift", "bigquery", "hive") && createTable && nrow(data) > 0) {
-      ctasHack(connection, qname, tempTable, varNames, fts, data, progressBar, oracleTempSchema)
+      ctasHack(connection, qname, tempTable, varNames, fts, data, progressBar, oracleTempSchema, sessionId)
     } else {
       if (createTable) {
         sql <- paste("CREATE TABLE ", qname, " (", fdef, ");", sep = "")
         sql <- SqlRender::translate(sql,
                                     targetDialect = attr(connection, "dbms"),
-                                    oracleTempSchema = oracleTempSchema)
+                                    oracleTempSchema = oracleTempSchema,
+                                    sessionId = sessionId)
         executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
       }
 
@@ -394,7 +397,8 @@ insertTable.default <- function(connection,
                          sep = "")
       insertSql <- SqlRender::translate(insertSql,
                                         targetDialect = connection@dbms,
-                                        oracleTempSchema = oracleTempSchema)
+                                        oracleTempSchema = oracleTempSchema,
+                                        sessionId = sessionId)
 
       batchSize <- 10000
 
