@@ -250,7 +250,23 @@ lowLevelExecuteSql.default <- function(connection, sql) {
   print(paste("SQL_QUERY: ", sql))
   statement <- rJava::.jcall(connection@jConnection, "Ljava/sql/Statement;", "createStatement")
   on.exit(rJava::.jcall(statement, "V", "close"))
+
+  start <- Sys.time()
   hasResultSet <- rJava::.jcall(statement, "Z", "execute", as.character(sql), check = FALSE)
+
+  threshold = 5
+  print(paste("threshold: ", threshold))
+  if (connection@dbms == "bigquery") {
+    value <- toupper(sql)
+    value <- sub("^\\s+", "", value)
+    if (startsWith(value, 'INSERT')) {
+      delta = Sys.time() - start
+      if (delta < threshold) {
+        Sys.sleep(threshold - delta)
+      }
+    }
+  }
+
   rowsAffected <- 0
   if (!hasResultSet) {
     rowsAffected <- rJava::.jcall(statement, "I", "getUpdateCount", check = FALSE)
