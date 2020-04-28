@@ -246,8 +246,7 @@ lowLevelExecuteSql <- function(connection, sql) {
 
 #' @export
 lowLevelExecuteSql.default <- function(connection, sql) {
-  print("")
-  print(paste(Sys.time(), ":", "SQL_QUERY: ", sql))
+
   statement <- rJava::.jcall(connection@jConnection, "Ljava/sql/Statement;", "createStatement")
   on.exit(rJava::.jcall(statement, "V", "close"))
 
@@ -255,7 +254,6 @@ lowLevelExecuteSql.default <- function(connection, sql) {
   hasResultSet <- rJava::.jcall(statement, "Z", "execute", as.character(sql), check = FALSE)
 
   threshold = 5
-  print(paste("threshold: ", threshold))
   if (connection@dbms == "bigquery") {
     value <- toupper(sql)
     value <- sub("^\\s+", "", value)
