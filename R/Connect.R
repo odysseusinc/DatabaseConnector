@@ -87,6 +87,9 @@ loadJdbcDriver <- function(driverClass, classPath) {
 # Singleton pattern to ensure driver is instantiated only once
 getJbcDriverSingleton <- function(driverClass = "", classPath = "") {
   key <- paste(driverClass, classPath)
+  writeLines(key)
+  writeLines("javaDrivers")
+  writeLines(jdbcDrivers)
   if (key %in% ls(jdbcDrivers)) {
     driver <- get(key, jdbcDrivers)
     if (rJava::is.jnull(driver)) {
