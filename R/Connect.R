@@ -77,6 +77,7 @@ jdbcDrivers <- new.env()
 
 loadJdbcDriver <- function(driverClass, classPath) {
   rJava::.jaddClassPath(classPath)
+  print("drivers")
   print(as.character(driverClass)[1])
   if (nchar(driverClass) && rJava::is.jnull(rJava::.jfindClass(as.character(driverClass)[1])))
     stop("Cannot find JDBC driver class ", driverClass)
