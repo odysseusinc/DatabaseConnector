@@ -79,6 +79,8 @@ loadJdbcDriver <- function(driverClass, classPath) {
   rJava::.jaddClassPath(classPath)
   if (nchar(driverClass) && rJava::is.jnull(rJava::.jfindClass(as.character(driverClass)[1])))
     stop("Cannot find JDBC driver class ", driverClass)
+
+  writeLines(driverClass)
   jdbcDriver <- rJava::.jnew(driverClass, check = FALSE)
   rJava::.jcheck(TRUE)
   return(jdbcDriver)
@@ -89,7 +91,7 @@ getJbcDriverSingleton <- function(driverClass = "", classPath = "") {
   key <- paste(driverClass, classPath)
   writeLines(key)
   writeLines("javaDrivers")
-  writeLines(jdbcDrivers)
+  print(jdbcDrivers)
   if (key %in% ls(jdbcDrivers)) {
     driver <- get(key, jdbcDrivers)
     if (rJava::is.jnull(driver)) {
