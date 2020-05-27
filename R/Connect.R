@@ -462,6 +462,7 @@ connect <- function(connectionDetails = NULL,
   if (dbms == "impala") {
     writeLines("Connecting using Impala driver")
     jarPath <- findPathToJar("\\.jar$", pathToDriver)
+    writeLines(jarPath)
     driver <- getJbcDriverSingleton("com.cloudera.impala.jdbc4.Driver", jarPath)
     if (missing(connectionString) || is.null(connectionString)) {
       if (missing(port) || is.null(port)) {
