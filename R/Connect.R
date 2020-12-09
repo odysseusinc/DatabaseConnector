@@ -189,7 +189,6 @@ connect <- function(connectionDetails = NULL,
                     oracleDriver = "thin",
                     connectionString = NULL,
                     pathToDriver = getOption("pathToDriver")) {
-  
   if (!missing(schema) && !is.null(schema)) {
     warning(
       "The schema argument is deprecated. Please use fully specified table names in your SQL statement, for example 'SELECT * FROM my_schema.my_table;'"
@@ -539,6 +538,27 @@ connect <- function(connectionDetails = NULL,
     writeLines("Connecting using SQLite driver")
     ensure_installed("RSQLite")
     connection <- connectUsingRsqLite(server = server)
+    attr(connection, "dbms") <- dbms
+    return(connection)
+  }
+  if (dbms == "teradata") {
+    writeLines("Connecting using TeraData driver")
+    print("teradata");
+    files <- list.files(path = pathToDriver, full.names = TRUE)
+    for (jar in files) {
+      .jaddClassPath(jar)
+    }
+
+    jarPath <- findPathToJar("^terajdbc4.jar$", pathToDriver)
+    driver <- getJbcDriverSingleton("com.teradata.jdbc.TeraDriver", jarPath)
+    if (missing(connectionString) || is.null(connectionString)) {
+      stop("Error: Connection string is not specified.")
+    }
+    connection <- connectUsingJdbcDriver(driver,
+                                         connectionString,
+                                         user = user,
+                                         password = password,
+                                         dbms = dbms)
     attr(connection, "dbms") <- dbms
     return(connection)
   }

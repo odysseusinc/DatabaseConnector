@@ -1,10 +1,6 @@
 package org.ohdsi.databaseConnector;
 
-import java.sql.BatchUpdateException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
+import java.sql.*;
 import java.util.Collections;
 
 public class BatchedInsert {
@@ -60,40 +56,51 @@ public class BatchedInsert {
 	private void setValue(PreparedStatement statement, int statementIndex, int rowIndex, int columnIndex) throws SQLException {
 		if (columnTypes[columnIndex] == INTEGER) {
 			int value = ((int[]) columns[columnIndex])[rowIndex];
+//			System.out.println(String.format("%s, %s: %s", rowIndex, columnIndex, value));
 			if (value == Integer.MIN_VALUE)
-				statement.setObject(statementIndex, null);
+//				statement.setInt(statementIndex, 0);
+				statement.setNull(statementIndex, Types.INTEGER);
 			else
 				statement.setInt(statementIndex, value);
 		} else if (columnTypes[columnIndex] == NUMERIC) {
 			double value = ((double[]) columns[columnIndex])[rowIndex];
+//			System.out.println(String.format("%s, %s: %s", rowIndex, columnIndex, value));
 			if (Double.isNaN(value))
-				statement.setObject(statementIndex, null);
+				statement.setNull(statementIndex, Types.DOUBLE);
+//				statement.setDouble(statementIndex, 0);
 			else
 				statement.setDouble(statementIndex, value);
 		} else if (columnTypes[columnIndex] == DATE) {
 			String value = ((String[]) columns[columnIndex])[rowIndex];
+//			System.out.println(String.format("%s, %s: %s", rowIndex, columnIndex, value));
 			if (value == null)
-				statement.setObject(statementIndex, null);
+				statement.setDate(statementIndex, (java.sql.Date)null);
 			else
 				statement.setDate(statementIndex, java.sql.Date.valueOf(value));
 		} else if (columnTypes[columnIndex] == DATETIME) {
 			String value = ((String[]) columns[columnIndex])[rowIndex];
+//			System.out.println(String.format("%s, %s: %s", rowIndex, columnIndex, value));
 			if (value == null)
-				statement.setObject(statementIndex, null);
+				statement.setTimestamp(statementIndex, (java.sql.Timestamp)null);
 			else
 				statement.setTimestamp(statementIndex, java.sql.Timestamp.valueOf(value));
 		} else if (columnTypes[columnIndex] == BIGINT) {
 			long value = ((long[]) columns[columnIndex])[rowIndex];
+//			System.out.println(String.format("%s, %s: %s", rowIndex, columnIndex, value));
 			if (value == Long.MIN_VALUE)
-				statement.setObject(statementIndex, null);
+//				statement.setLong(statementIndex, Types.NULL);
+				statement.setNull(statementIndex, Types.BIGINT);
 			else
-				statement.setLong(statementIndex, value);
+				statement.setLong(statementIndex, 0);
 		} else {
 			String value = ((String[]) columns[columnIndex])[rowIndex];
-			if (value == null)
-				statement.setObject(statementIndex, null);
-			else
+//			System.out.println(String.format("%s, %s: %s", rowIndex, columnIndex, value));
+			if (value == null) {
+				statement.setString(statementIndex, (String)null);
+//				statement.setNull(statementIndex, Types.NULL);
+			} else {
 				statement.setString(statementIndex, value);
+			}
 		}
 	}
 	
@@ -103,8 +110,9 @@ public class BatchedInsert {
 			trySettingAutoCommit(connection, false);
 			PreparedStatement statement = connection.prepareStatement(sql);
 			for (int i = 0; i < rowCount; i++) {
-				for (int j = 0; j < columnCount; j++)
+				for (int j = 0; j < columnCount; j++){
 					setValue(statement, j + 1, i, j);
+				}
 				statement.addBatch();
 			}
 			statement.executeBatch();
@@ -117,6 +125,8 @@ public class BatchedInsert {
 			if (e instanceof BatchUpdateException) {
 				System.err.println(((BatchUpdateException) e).getNextException().getMessage());
 			}
+		} catch(Exception e) {
+			e.printStackTrace();
 		} finally {
 			for (int i = 0; i < columnCount; i++) {
 				columns[i] = null;
